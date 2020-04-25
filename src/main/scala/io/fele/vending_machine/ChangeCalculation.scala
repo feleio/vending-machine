@@ -3,6 +3,7 @@ package io.fele.vending_machine
 import scala.math.min
 import io.fele.vending_machine.model.{Coin, CoinCount}
 
+// core algorithm to calculate coin for change
 object ChangeCalculation {
   implicit class RichCoinCountList(coinCounts: List[CoinCount]) {
     def totalAmount: Int = coinCounts.foldLeft(0)((total, coinCount) => total + coinCount.coin.value * coinCount.count)
