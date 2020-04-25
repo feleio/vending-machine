@@ -21,8 +21,8 @@ class InMemoryCoinsRepo extends CoinsRepo {
     }.toSeq:_*
   )
 
-  override def getCoins: List[CoinCount] = coinsCountMap.map {
-    case (value, count) => CoinCount(Coin(value), count)
+  override def getCoins: List[CoinCount] = coinsCountMap.collect {
+    case (value, count) if count > 0 => CoinCount(Coin(value), count)
   }.toList.sortBy(_.coin.value)(Ordering.Int.reverse)
 
   override def loadCoins(coinCounts: List[CoinCount]): Unit = {
@@ -34,16 +34,25 @@ class InMemoryCoinsRepo extends CoinsRepo {
   }
 
   override def removeCoins(coinCounts: List[CoinCount]): Either[CoinsException, Unit] = {
-    for {
-      coinCount <- coinCounts
-    } {
+    val notEnoughCoinCounts = coinCounts.find { coinCount =>
       val curCount = coinsCountMap(coinCount.coin.value)
-      if(curCount >= coinCount.count)
-        coinsCountMap(coinCount.coin.value) -= coinCount.count
-      else
-        return Left(NotEnoughCoinsException)
+      curCount < coinCount.count
     }
-    Right(())
+
+    if(notEnoughCoinCounts.isDefined)
+      Left(NotEnoughCoinsException)
+    else {
+      for {
+        coinCount <- coinCounts
+      } {
+        val curCount = coinsCountMap(coinCount.coin.value)
+        if(curCount >= coinCount.count)
+          coinsCountMap(coinCount.coin.value) -= coinCount.count
+        else
+          return Left(NotEnoughCoinsException)
+      }
+      Right(())
+    }
   }
 }
 
