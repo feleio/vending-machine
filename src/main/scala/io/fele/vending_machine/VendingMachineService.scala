@@ -2,7 +2,7 @@ package io.fele.vending_machine
 
 import io.fele.vending_machine.model.{CoinCount, ProductCount}
 
-trait VendingMachine {
+trait VendingMachineService {
   def getAvailableCoins: List[CoinCount]
 
   def getAvailableProduct: List[ProductCount]
