@@ -13,7 +13,7 @@ class VendingMachineServiceTest extends AnyFunSpec with Matchers with BeforeAndA
   var vendingStateRepo: VendingStateRepo = _
   var emptyVendingMachineService: VendingMachineService = _
   var vendingMachineService: VendingMachineService = _
-
+  var limitedChangeVendingMachineService: VendingMachineService = _
   val coins = List(
     CoinCount(Coin(200), count = 100),
     CoinCount(Coin(100), count = 100),
@@ -23,6 +23,10 @@ class VendingMachineServiceTest extends AnyFunSpec with Matchers with BeforeAndA
     CoinCount(Coin(5), count = 100),
     CoinCount(Coin(2), count = 100),
     CoinCount(Coin(1), count = 100),
+  )
+  val limitedCoins = List(
+    CoinCount(Coin(200), count = 1),
+    CoinCount(Coin(100), count = 1),
   )
 
   val product1: Product = Product(id = 1, name = "coke", price = 290)
@@ -36,13 +40,16 @@ class VendingMachineServiceTest extends AnyFunSpec with Matchers with BeforeAndA
   )
 
   before {
-    coinsRepo = new InMemoryCoinsRepo()
-    productsRepo = new InMemoryProductsRepo()
-    vendingStateRepo = new InMemoryVendingStateRepo()
+    def coinsRepo = new InMemoryCoinsRepo()
+    def productsRepo = new InMemoryProductsRepo()
+    def vendingStateRepo = new InMemoryVendingStateRepo()
     emptyVendingMachineService = new VendingMachineServiceImpl(coinsRepo, productsRepo, vendingStateRepo)
     vendingMachineService = new VendingMachineServiceImpl(coinsRepo, productsRepo, vendingStateRepo)
     vendingMachineService.loadCoins(coins)
     vendingMachineService.loadProducts(products)
+    limitedChangeVendingMachineService = new VendingMachineServiceImpl(coinsRepo, productsRepo, vendingStateRepo)
+    limitedChangeVendingMachineService.loadProducts(products)
+    limitedChangeVendingMachineService.loadCoins(limitedCoins)
   }
 
   describe("Empty VendingMachineService") {
@@ -156,7 +163,7 @@ class VendingMachineServiceTest extends AnyFunSpec with Matchers with BeforeAndA
         CoinCount(Coin(1), count = 100),
       ))
 
-      val expectedOutput = Left(NotEnoughCoinInserted)
+      val expectedOutput = Left(NotEnoughCoinInsertedException)
 
       vendingMachineService.selectProduct(product3.id) should be (expectedOutput)
 
@@ -219,7 +226,7 @@ class VendingMachineServiceTest extends AnyFunSpec with Matchers with BeforeAndA
         CoinCount(Coin(1), count = 100),
       ))
 
-      vendingMachineService.selectProduct(product3.id) should be (Left(NotEnoughCoinInserted))
+      vendingMachineService.selectProduct(product3.id) should be (Left(NotEnoughCoinInsertedException))
 
       val expectedOutput =  Right(Some(ReturnedProductAndChange(product = product3, change = List(
         CoinCount(Coin(200), 2),
@@ -251,6 +258,56 @@ class VendingMachineServiceTest extends AnyFunSpec with Matchers with BeforeAndA
 
       vendingMachineService.getSelectedProductId should be (None)
       vendingMachineService.getInsertedCoins should be (Nil)
+    }
+  }
+
+
+  describe("Limited change VendingMachineService") {
+    it("should not be able to output a product because not enough change") {
+      limitedChangeVendingMachineService.listAvailableProduct should be(List(
+        ProductCount(product = product1, count = 10),
+        ProductCount(product = product2, count = 10),
+        ProductCount(product = product3, count = 10),
+      ))
+      limitedChangeVendingMachineService.getProduct(product2.id) should be(
+        Some(Product(id = 2, name = "milk", price = 90))
+      )
+
+      limitedChangeVendingMachineService.insertCoins(List(
+        CoinCount(Coin(200), 1),
+      )) should be(
+        Right(None)
+      )
+
+      limitedChangeVendingMachineService.getInsertedCoins should be(List(
+        CoinCount(Coin(200), 1),
+      ))
+
+      limitedChangeVendingMachineService.listAvailableCoins.totalAmount should be(300)
+      limitedChangeVendingMachineService.listAvailableCoins should be(List(
+        CoinCount(Coin(200), count = 1),
+        CoinCount(Coin(100), count = 1),
+      ))
+
+      val expectedOutput = Left(NotEnoughCoinsForChangeException)
+      limitedChangeVendingMachineService.selectProduct(product2.id) should be(expectedOutput)
+
+      limitedChangeVendingMachineService.listAvailableCoins.totalAmount should be(300)
+      limitedChangeVendingMachineService.listAvailableCoins should be(List(
+        CoinCount(Coin(200), count = 1),
+        CoinCount(Coin(100), count = 1),
+      ))
+
+      limitedChangeVendingMachineService.listAvailableProduct should be(List(
+        ProductCount(product = product1, count = 10),
+        ProductCount(product = product2, count = 10),
+        ProductCount(product = product3, count = 10),
+      ))
+
+      limitedChangeVendingMachineService.getSelectedProductId should be(Some(2))
+      limitedChangeVendingMachineService.getInsertedCoins should be(List(
+        CoinCount(Coin(200), 1),
+      ))
     }
   }
 
