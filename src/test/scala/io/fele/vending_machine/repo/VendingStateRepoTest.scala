@@ -18,7 +18,10 @@ class VendingStateRepoTest extends AnyFreeSpec with Matchers {
 
   val vendingStateRepo = new InMemoryVendingStateRepo()
   val vendingStateRepoWithCoins = new InMemoryVendingStateRepo()
+  val stateRepoForReset = new InMemoryVendingStateRepo()
   vendingStateRepoWithCoins.insertCoins(coins)
+  stateRepoForReset.insertCoins(coins)
+  stateRepoForReset.selectProduct(productId = 1)
 
   "VendingStateRepo" - {
     "when contains 0 coins and no selected Product" - {
@@ -75,6 +78,14 @@ class VendingStateRepoTest extends AnyFreeSpec with Matchers {
           CoinCount(Coin(2), count = 4),
           CoinCount(Coin(1), count = 4),
         ))
+      }
+
+      "should be able reset all the current state" in {
+        stateRepoForReset.getInsertedCoins should be (coins)
+        stateRepoForReset.getSelectedProduct should be (Some(1))
+        stateRepoForReset.clear()
+        stateRepoForReset.getInsertedCoins should be (Nil)
+        stateRepoForReset.getSelectedProduct should be (None)
       }
     }
   }
