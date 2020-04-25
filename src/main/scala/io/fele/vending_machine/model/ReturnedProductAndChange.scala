@@ -1,3 +1,3 @@
 package io.fele.vending_machine.model
 
-case class ReturnedProductAndChange(productId: Int, change: List[CoinCount])
+case class ReturnedProductAndChange(product: Product, change: List[CoinCount])
