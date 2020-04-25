@@ -7,3 +7,9 @@ trait CoinsRepo {
   def loadCoins(coinCounts: List[CoinCount]): Unit
 }
 
+class InMemoryCoinsRepo extends CoinsRepo {
+  override def getCoins: List[CoinCount] = ???
+
+  override def loadCoins(coinCounts: List[CoinCount]): Unit = ???
+}
+
