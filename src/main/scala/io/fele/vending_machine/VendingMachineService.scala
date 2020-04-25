@@ -6,8 +6,8 @@ import io.fele.vending_machine.ChangeCalculation.RichCoinCountList
 
 sealed trait VendingMachineException extends Exception
 case object ProductNotFoundException extends VendingMachineException
-case object NotEnoughCoinsForChange extends VendingMachineException
-case object NotEnoughCoinInserted extends VendingMachineException
+case object NotEnoughCoinsForChangeException extends VendingMachineException
+case object NotEnoughCoinInsertedException extends VendingMachineException
 
 trait VendingMachineService {
   // read only actions
@@ -93,11 +93,11 @@ class VendingMachineServiceImpl(
               Right(Some(output))
             case None =>
               coinsRepo.removeCoins(insertedCoins)
-              Left(NotEnoughCoinsForChange)
+              Left(NotEnoughCoinsForChangeException)
           }
         }
         else
-          Left(NotEnoughCoinInserted)
+          Left(NotEnoughCoinInsertedException)
       case None =>
         Right(None)
     }
