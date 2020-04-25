@@ -1,6 +1,6 @@
 package io.fele.vending_machine.repo
 
-import io.fele.vending_machine.model.{Coin, CoinCount, Product, ProductCount}
+import io.fele.vending_machine.model.ProductCount
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -56,38 +56,46 @@ class ProductsRepoTest extends AnyFreeSpec with Matchers {
           ProductCount(productId = 2, 200),
           ProductCount(productId = 3, 200),
         ))
+        productsRepo.getProductCount(productId = 1) should be (200)
+        productsRepo.getProductCount(productId = 2) should be (200)
+        productsRepo.getProductCount(productId = 3) should be (200)
       }
 
       "should be able to remove products" in {
-        doubleProductsRepo.removeProduct(1) should be (Right(()))
-        doubleProductsRepo.removeProduct(2) should be (Right(()))
-        doubleProductsRepo.removeProduct(3) should be (Right(()))
+        doubleProductsRepo.removeProduct(productId = 1) should be (Right(()))
+        doubleProductsRepo.removeProduct(productId = 2) should be (Right(()))
+        doubleProductsRepo.removeProduct(productId = 3) should be (Right(()))
         doubleProductsRepo.listProducts should be (List(
           ProductCount(productId = 1, 199),
           ProductCount(productId = 2, 199),
           ProductCount(productId = 3, 199),
         ))
+        doubleProductsRepo.getProductCount(productId = 1) should be (199)
+        doubleProductsRepo.getProductCount(productId = 2) should be (199)
+        doubleProductsRepo.getProductCount(productId = 3) should be (199)
       }
 
       "given if not enough products to be removed" - {
-        "should not able to remove coins" in {
+        "should not able to remove products" in {
           oneProductsRepo.listProducts should be (List(
             ProductCount(productId = 1, 1),
             ProductCount(productId = 2, 1),
             ProductCount(productId = 3, 1),
           ))
-          oneProductsRepo.removeProduct(1) should be (Right(()))
+          oneProductsRepo.removeProduct(productId = 1) should be (Right(()))
           oneProductsRepo.listProducts should be (List(
-            ProductCount(productId = 1, 0),
             ProductCount(productId = 2, 1),
             ProductCount(productId = 3, 1),
           ))
-          oneProductsRepo.removeProduct(1) should be (Left(ProductNotFoundException))
+          oneProductsRepo.removeProduct(productId = 1) should be (Left(ProductNotFoundException))
           oneProductsRepo.listProducts should be (List(
-            ProductCount(productId = 1, 0),
             ProductCount(productId = 2, 1),
             ProductCount(productId = 3, 1),
           ))
+
+          oneProductsRepo.getProductCount(productId = 1) should be (0)
+          oneProductsRepo.getProductCount(productId = 2) should be (1)
+          oneProductsRepo.getProductCount(productId = 3) should be (1)
         }
       }
     }

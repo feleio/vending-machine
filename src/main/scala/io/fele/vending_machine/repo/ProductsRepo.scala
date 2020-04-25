@@ -21,7 +21,8 @@ class InMemoryProductsRepo extends ProductsRepo {
     case (productId, count) if count > 0 => ProductCount(productId, count)
   }.toList.sortBy(_.productId)
 
-  override def getProductCount(productId: Int): Int = productCountMap.getOrElse(productId, 0)
+  override def getProductCount(productId: Int): Int =
+    productCountMap.getOrElse(productId, 0)
 
   override def loadProducts(productCounts: List[ProductCount]): Unit = {
     for {
