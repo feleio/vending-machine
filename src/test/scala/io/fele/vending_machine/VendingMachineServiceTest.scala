@@ -1,7 +1,8 @@
 package io.fele.vending_machine
 
-import io.fele.vending_machine.model.{Coin, CoinCount, Product, ProductCount}
+import io.fele.vending_machine.model.{Coin, CoinCount, Product, ProductCount, ReturnedProductAndChange}
 import io.fele.vending_machine.repo.{CoinsRepo, InMemoryCoinsRepo, InMemoryProductsRepo, InMemoryVendingStateRepo, ProductsRepo, VendingStateRepo}
+import io.fele.vending_machine.ChangeCalculation.RichCoinCountList
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
@@ -24,14 +25,14 @@ class VendingMachineServiceTest extends AnyFunSpec with Matchers with BeforeAndA
     CoinCount(Coin(1), count = 100),
   )
 
-  val product1: Product = Product(1, "coke", 2900)
-  val product2: Product = Product(2, "milk", 900)
-  val product3: Product = Product(3, "wine", 8900)
+  val product1: Product = Product(id = 1, name = "coke", price = 290)
+  val product2: Product = Product(id = 2, name = "milk", price = 90)
+  val product3: Product = Product(id = 3, name = "wine", price = 890)
 
   val products = List(
-    ProductCount(product = product1, 100),
-    ProductCount(product = product2, 100),
-    ProductCount(product = product3, 100),
+    ProductCount(product = product1, count = 10),
+    ProductCount(product = product2, count = 10),
+    ProductCount(product = product3, count = 10),
   )
 
   before {
@@ -40,11 +41,12 @@ class VendingMachineServiceTest extends AnyFunSpec with Matchers with BeforeAndA
     vendingStateRepo = new InMemoryVendingStateRepo()
     emptyVendingMachineService = new VendingMachineServiceImpl(coinsRepo, productsRepo, vendingStateRepo)
     vendingMachineService = new VendingMachineServiceImpl(coinsRepo, productsRepo, vendingStateRepo)
-
+    vendingMachineService.loadCoins(coins)
+    vendingMachineService.loadProducts(products)
   }
 
-  describe("VendingMachineService") {
-    it("Empty Vending machine should be able to load coins and product") {
+  describe("Empty VendingMachineService") {
+    it("should be able to load coins and product") {
       emptyVendingMachineService.listAvailableCoins should be (Nil)
       emptyVendingMachineService.loadCoins(coins)
       emptyVendingMachineService.listAvailableCoins should be (coins)
@@ -53,15 +55,202 @@ class VendingMachineServiceTest extends AnyFunSpec with Matchers with BeforeAndA
       emptyVendingMachineService.loadProducts(products)
       emptyVendingMachineService.listAvailableProduct should be (products)
     }
+  }
 
-    it("Empty Vending machine should be able to load coins and product2") {
-      emptyVendingMachineService.listAvailableCoins should be (Nil)
-      emptyVendingMachineService.loadCoins(coins)
-      emptyVendingMachineService.listAvailableCoins should be (coins)
+  describe("Loaded VendingMachineService") {
+    it("when select product after inserting coins, should be able to output a product") {
+      vendingMachineService.listAvailableProduct should be (List(
+        ProductCount(product = product1, count = 10),
+        ProductCount(product = product2, count = 10),
+        ProductCount(product = product3, count = 10),
+      ))
+      vendingMachineService.getProduct(product1.id) should be (
+        Some(Product(id = 1, name = "coke", price = 290))
+      )
 
-      emptyVendingMachineService.listAvailableProduct should be (Nil)
-      emptyVendingMachineService.loadProducts(products)
-      emptyVendingMachineService.listAvailableProduct should be (products)
+      vendingMachineService.insertCoins(List(
+        CoinCount(Coin(100), 2),
+        CoinCount(Coin(200), 1),
+      )) should be (
+        Right(None)
+      )
+
+      vendingMachineService.getInsertedCoins should be (List(
+        CoinCount(Coin(200), 1),
+        CoinCount(Coin(100), 2),
+      ))
+
+
+      vendingMachineService.listAvailableCoins.totalAmount should be (38800)
+      vendingMachineService.listAvailableCoins should be (List(
+        CoinCount(Coin(200), count = 100),
+        CoinCount(Coin(100), count = 100),
+        CoinCount(Coin(50), count = 100),
+        CoinCount(Coin(20), count = 100),
+        CoinCount(Coin(10), count = 100),
+        CoinCount(Coin(5), count = 100),
+        CoinCount(Coin(2), count = 100),
+        CoinCount(Coin(1), count = 100),
+      ))
+
+      val expectedOutput =  Right(Some(ReturnedProductAndChange(product = product1, change = List(
+        CoinCount(Coin(100), 1),
+        CoinCount(Coin(10), 1),
+      ))))
+
+      vendingMachineService.selectProduct(product1.id) should be (expectedOutput)
+
+      vendingMachineService.listAvailableCoins.totalAmount should be (38800 + 290)
+      vendingMachineService.listAvailableCoins should be (List(
+        CoinCount(Coin(200), count = 100 + 1),
+        CoinCount(Coin(100), count = 100 - 1 + 2),
+        CoinCount(Coin(50), count = 100),
+        CoinCount(Coin(20), count = 100),
+        CoinCount(Coin(10), count = 100 - 1),
+        CoinCount(Coin(5), count = 100),
+        CoinCount(Coin(2), count = 100),
+        CoinCount(Coin(1), count = 100),
+      ))
+
+      vendingMachineService.listAvailableProduct should be (List(
+        ProductCount(product = product1, count = 10 - 1),
+        ProductCount(product = product2, count = 10),
+        ProductCount(product = product3, count = 10),
+      ))
+
+      vendingMachineService.getSelectedProductId should be (None)
+      vendingMachineService.getInsertedCoins should be (Nil)
+    }
+
+    it("when select product without enough coin, should not be able to output a product") {
+      vendingMachineService.listAvailableProduct should be (List(
+        ProductCount(product = product1, count = 10),
+        ProductCount(product = product2, count = 10),
+        ProductCount(product = product3, count = 10),
+      ))
+      vendingMachineService.getProduct(product3.id) should be (
+        Some(Product(id = 3, name = "wine", price = 890))
+      )
+
+      vendingMachineService.insertCoins(List(
+        CoinCount(Coin(100), 2),
+        CoinCount(Coin(200), 1),
+      )) should be (
+        Right(None)
+      )
+
+      vendingMachineService.getInsertedCoins should be (List(
+        CoinCount(Coin(200), 1),
+        CoinCount(Coin(100), 2),
+      ))
+
+      vendingMachineService.listAvailableCoins.totalAmount should be (38800)
+      vendingMachineService.listAvailableCoins should be (List(
+        CoinCount(Coin(200), count = 100),
+        CoinCount(Coin(100), count = 100),
+        CoinCount(Coin(50), count = 100),
+        CoinCount(Coin(20), count = 100),
+        CoinCount(Coin(10), count = 100),
+        CoinCount(Coin(5), count = 100),
+        CoinCount(Coin(2), count = 100),
+        CoinCount(Coin(1), count = 100),
+      ))
+
+      val expectedOutput = Left(NotEnoughCoinInserted)
+
+      vendingMachineService.selectProduct(product3.id) should be (expectedOutput)
+
+      vendingMachineService.listAvailableCoins.totalAmount should be (38800)
+      vendingMachineService.listAvailableCoins should be (List(
+        CoinCount(Coin(200), count = 100),
+        CoinCount(Coin(100), count = 100),
+        CoinCount(Coin(50), count = 100),
+        CoinCount(Coin(20), count = 100),
+        CoinCount(Coin(10), count = 100),
+        CoinCount(Coin(5), count = 100),
+        CoinCount(Coin(2), count = 100),
+        CoinCount(Coin(1), count = 100),
+      ))
+
+      vendingMachineService.listAvailableProduct should be (List(
+        ProductCount(product = product1, count = 10),
+        ProductCount(product = product2, count = 10),
+        ProductCount(product = product3, count = 10),
+      ))
+
+      vendingMachineService.getSelectedProductId should be (Some(3))
+      vendingMachineService.getInsertedCoins should be (List(
+        CoinCount(Coin(200), 1),
+        CoinCount(Coin(100), 2),
+      ))
+    }
+
+    it("when insert enough coins after complaint not enough coin, should be able to output a product") {
+      vendingMachineService.listAvailableProduct should be (List(
+        ProductCount(product = product1, count = 10),
+        ProductCount(product = product2, count = 10),
+        ProductCount(product = product3, count = 10),
+      ))
+      vendingMachineService.getProduct(product3.id) should be (
+        Some(Product(id = 3, name = "wine", price = 890))
+      )
+
+      vendingMachineService.insertCoins(List(
+        CoinCount(Coin(100), 2),
+        CoinCount(Coin(200), 1),
+      )) should be (
+        Right(None)
+      )
+
+      vendingMachineService.getInsertedCoins should be (List(
+        CoinCount(Coin(200), 1),
+        CoinCount(Coin(100), 2),
+      ))
+
+      vendingMachineService.listAvailableCoins.totalAmount should be (38800)
+      vendingMachineService.listAvailableCoins should be (List(
+        CoinCount(Coin(200), count = 100),
+        CoinCount(Coin(100), count = 100),
+        CoinCount(Coin(50), count = 100),
+        CoinCount(Coin(20), count = 100),
+        CoinCount(Coin(10), count = 100),
+        CoinCount(Coin(5), count = 100),
+        CoinCount(Coin(2), count = 100),
+        CoinCount(Coin(1), count = 100),
+      ))
+
+      vendingMachineService.selectProduct(product3.id) should be (Left(NotEnoughCoinInserted))
+
+      val expectedOutput =  Right(Some(ReturnedProductAndChange(product = product3, change = List(
+        CoinCount(Coin(200), 2),
+        CoinCount(Coin(100), 1),
+        CoinCount(Coin(10), 1),
+      ))))
+
+      vendingMachineService.insertCoins(List(
+        CoinCount(Coin(200), 5),
+      )) should be (expectedOutput)
+
+      vendingMachineService.listAvailableCoins.totalAmount should be (38800 + 890)
+      vendingMachineService.listAvailableCoins should be (List(
+        CoinCount(Coin(200), count = 100 - 2 + 6),
+        CoinCount(Coin(100), count = 100 - 1 + 2),
+        CoinCount(Coin(50), count = 100),
+        CoinCount(Coin(20), count = 100),
+        CoinCount(Coin(10), count = 100 - 1),
+        CoinCount(Coin(5), count = 100),
+        CoinCount(Coin(2), count = 100),
+        CoinCount(Coin(1), count = 100),
+      ))
+
+      vendingMachineService.listAvailableProduct should be (List(
+        ProductCount(product = product1, count = 10),
+        ProductCount(product = product2, count = 10),
+        ProductCount(product = product3, count = 10 - 1),
+      ))
+
+      vendingMachineService.getSelectedProductId should be (None)
+      vendingMachineService.getInsertedCoins should be (Nil)
     }
   }
 
