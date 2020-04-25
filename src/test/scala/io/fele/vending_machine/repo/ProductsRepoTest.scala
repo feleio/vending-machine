@@ -1,14 +1,18 @@
 package io.fele.vending_machine.repo
 
-import io.fele.vending_machine.model.ProductCount
+import io.fele.vending_machine.model.{Product, ProductCount}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class ProductsRepoTest extends AnyFreeSpec with Matchers {
+  val product1: Product = Product(1, "coke", 2900)
+  val product2: Product = Product(2, "milk", 900)
+  val product3: Product = Product(3, "wine", 8900)
+
   val products = List(
-    ProductCount(productId = 1, 100),
-    ProductCount(productId = 2, 100),
-    ProductCount(productId = 3, 100),
+    ProductCount(product = product1, 100),
+    ProductCount(product = product2, 100),
+    ProductCount(product = product3, 100),
   )
 
   val zeroProductsRepo = new InMemoryProductsRepo()
@@ -17,44 +21,47 @@ class ProductsRepoTest extends AnyFreeSpec with Matchers {
   val doubleProductsRepo = new InMemoryProductsRepo()
   productsRepo.loadProducts(products)
   oneProductsRepo.loadProducts(List(
-    ProductCount(productId = 1, 1),
-    ProductCount(productId = 2, 1),
-    ProductCount(productId = 3, 1),
+    ProductCount(product = product1, 1),
+    ProductCount(product = product2, 1),
+    ProductCount(product = product3, 1),
   ))
   doubleProductsRepo.loadProducts(products)
   doubleProductsRepo.loadProducts(products)
 
   "ProductsRepo" - {
     "when contains 0 products" - {
-      zeroProductsRepo.listProducts should be (Nil)
+      zeroProductsRepo.listProductCounts should be (Nil)
 
       "should be able to load 0 products" in {
         val zeroProducts = Nil
         zeroProductsRepo.loadProducts(zeroProducts)
-        zeroProductsRepo.listProducts should be (Nil)
+        zeroProductsRepo.listProductCounts should be (Nil)
       }
 
       "should be able to load products" in {
         zeroProductsRepo.loadProducts(products)
-        zeroProductsRepo.listProducts should be (products)
+        zeroProductsRepo.listProductCounts should be (products)
       }
     }
 
     "when contains many products" - {
-      productsRepo.listProducts should be (products)
+      productsRepo.getProduct(productId = 1) should be (Some(product1))
+      productsRepo.getProduct(productId = 2) should be (Some(product2))
+      productsRepo.getProduct(productId = 3) should be (Some(product3))
+      productsRepo.listProductCounts should be (products)
 
       "should be able to load 0 products" in {
         val zeroProducts = Nil
         productsRepo.loadProducts(zeroProducts)
-        productsRepo.listProducts should be (products)
+        productsRepo.listProductCounts should be (products)
       }
 
       "should be able to load products" in {
         productsRepo.loadProducts(products)
-        productsRepo.listProducts should be (List(
-          ProductCount(productId = 1, 200),
-          ProductCount(productId = 2, 200),
-          ProductCount(productId = 3, 200),
+        productsRepo.listProductCounts should be (List(
+          ProductCount(product = product1, 200),
+          ProductCount(product = product2, 200),
+          ProductCount(product = product3, 200),
         ))
         productsRepo.getProductCount(productId = 1) should be (200)
         productsRepo.getProductCount(productId = 2) should be (200)
@@ -65,10 +72,10 @@ class ProductsRepoTest extends AnyFreeSpec with Matchers {
         doubleProductsRepo.removeProduct(productId = 1) should be (Right(()))
         doubleProductsRepo.removeProduct(productId = 2) should be (Right(()))
         doubleProductsRepo.removeProduct(productId = 3) should be (Right(()))
-        doubleProductsRepo.listProducts should be (List(
-          ProductCount(productId = 1, 199),
-          ProductCount(productId = 2, 199),
-          ProductCount(productId = 3, 199),
+        doubleProductsRepo.listProductCounts should be (List(
+          ProductCount(product = product1, 199),
+          ProductCount(product = product2, 199),
+          ProductCount(product = product3, 199),
         ))
         doubleProductsRepo.getProductCount(productId = 1) should be (199)
         doubleProductsRepo.getProductCount(productId = 2) should be (199)
@@ -77,20 +84,20 @@ class ProductsRepoTest extends AnyFreeSpec with Matchers {
 
       "given if not enough products to be removed" - {
         "should not able to remove products" in {
-          oneProductsRepo.listProducts should be (List(
-            ProductCount(productId = 1, 1),
-            ProductCount(productId = 2, 1),
-            ProductCount(productId = 3, 1),
+          oneProductsRepo.listProductCounts should be (List(
+            ProductCount(product = product1, 1),
+            ProductCount(product = product2, 1),
+            ProductCount(product = product3, 1),
           ))
           oneProductsRepo.removeProduct(productId = 1) should be (Right(()))
-          oneProductsRepo.listProducts should be (List(
-            ProductCount(productId = 2, 1),
-            ProductCount(productId = 3, 1),
+          oneProductsRepo.listProductCounts should be (List(
+            ProductCount(product = product2, 1),
+            ProductCount(product = product3, 1),
           ))
           oneProductsRepo.removeProduct(productId = 1) should be (Left(ProductNotFoundException))
-          oneProductsRepo.listProducts should be (List(
-            ProductCount(productId = 2, 1),
-            ProductCount(productId = 3, 1),
+          oneProductsRepo.listProductCounts should be (List(
+            ProductCount(product = product2, 1),
+            ProductCount(product = product3, 1),
           ))
 
           oneProductsRepo.getProductCount(productId = 1) should be (0)
