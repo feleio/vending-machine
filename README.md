@@ -6,3 +6,8 @@ vending-machine
  - [VendingStateRepo.scala](https://github.com/feleio/vending-machine/blob/master/src/main/scala/io/fele/vending_machine/VendingMachineService.scala) contains all the business logic
  - Interaction with the vending machine can be found in [VendingMachineServiceTest.scala](https://github.com/feleio/vending-machine/blob/master/src/test/scala/io/fele/vending_machine/VendingMachineServiceTest.scala) 
  
+# Running test
+After install java jdk, scala and sbt, run:
+```shell script
+sbt test
+```
