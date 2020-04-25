@@ -28,33 +28,33 @@ class CoinsRepoTest extends AnyFreeSpec with Matchers {
 
   "CoinsRepo" - {
     "when contains 0 coins" - {
-      zeroCoinsRepo.getCoins should be (Nil)
+      zeroCoinsRepo.listCoins should be (Nil)
 
       "should be able to load 0 coins" in {
         val zeroCoins = Nil
         zeroCoinsRepo.loadCoins(zeroCoins)
-        zeroCoinsRepo.getCoins should be (Nil)
+        zeroCoinsRepo.listCoins should be (Nil)
       }
 
       "should be able to load coins" in {
         zeroCoinsRepo.loadCoins(coins)
-        zeroCoinsRepo.getCoins should be (coins)
+        zeroCoinsRepo.listCoins should be (coins)
       }
 
     }
 
     "when contains many coins" - {
-      coinsRepo.getCoins should be (coins)
+      coinsRepo.listCoins should be (coins)
 
       "should be able to load 0 coins" in {
         val zeroCoins = Nil
         coinsRepo.loadCoins(zeroCoins)
-        coinsRepo.getCoins should be (coins)
+        coinsRepo.listCoins should be (coins)
       }
 
       "should be able to load coins" in {
         coinsRepo.loadCoins(coins)
-        coinsRepo.getCoins should be (List(
+        coinsRepo.listCoins should be (List(
           CoinCount(Coin(200), count = 200),
           CoinCount(Coin(100), count = 200),
           CoinCount(Coin(50), count = 200),
@@ -68,7 +68,7 @@ class CoinsRepoTest extends AnyFreeSpec with Matchers {
 
       "should be able to remove coins" in {
         doubleCoinsRepo.removeCoins(coins) should be (Right(()))
-        doubleCoinsRepo.getCoins should be (List(
+        doubleCoinsRepo.listCoins should be (List(
           CoinCount(Coin(200), count = 100),
           CoinCount(Coin(100), count = 100),
           CoinCount(Coin(50), count = 100),
@@ -93,7 +93,7 @@ class CoinsRepoTest extends AnyFreeSpec with Matchers {
             CoinCount(Coin(1), count = 1),
           )
           coinsForRemoveRepo.removeCoins(removeCoins) should be (Left(NotEnoughCoinsException))
-          coinsForRemoveRepo.getCoins should be (List(
+          coinsForRemoveRepo.listCoins should be (List(
             CoinCount(Coin(200), count = 100),
             CoinCount(Coin(100), count = 100),
             CoinCount(Coin(50), count = 100),

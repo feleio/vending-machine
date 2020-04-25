@@ -8,7 +8,7 @@ sealed trait CoinsException extends Exception
 case object NotEnoughCoinsException extends CoinsException
 
 trait CoinsRepo {
-  def getCoins: List[CoinCount]
+  def listCoins: List[CoinCount]
   def loadCoins(coinCounts: List[CoinCount]): Unit
   def removeCoins(coinCounts: List[CoinCount]): Either[CoinsException, Unit]
 }
@@ -20,7 +20,7 @@ class InMemoryCoinsRepo extends CoinsRepo {
     }.toSeq:_*
   )
 
-  override def getCoins: List[CoinCount] = coinsCountMap.collect {
+  override def listCoins: List[CoinCount] = coinsCountMap.collect {
     case (value, count) if count > 0 => CoinCount(Coin(value), count)
   }.toList.sortBy(_.coin.value)(Ordering.Int.reverse)
 
