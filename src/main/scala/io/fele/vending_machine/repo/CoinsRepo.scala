@@ -4,9 +4,8 @@ import io.fele.vending_machine.model.{Coin, CoinCount}
 
 import scala.collection.mutable
 
-sealed trait CoinsException
+sealed trait CoinsException extends Exception
 case object NotEnoughCoinsException extends CoinsException
-
 
 trait CoinsRepo {
   def getCoins: List[CoinCount]
