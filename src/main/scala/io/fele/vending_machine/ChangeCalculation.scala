@@ -24,7 +24,7 @@ object ChangeCalculation {
           curCoinCount <- canTakeMost to 0 by -1
         } {
           val amountDeducted: Int = changeAmount - coinCount.coin.value * curCoinCount
-          val subResultOpt: Option[List[CoinCount]] = getChange(availableCoins.tail, amountDeducted)
+          val subResultOpt: Option[List[CoinCount]] = getChangeRec(availableCoins.tail, amountDeducted)
           val result: Option[List[CoinCount]] = subResultOpt.map { subResult =>
             if (curCoinCount > 0)
               CoinCount(coinCount.coin, curCoinCount):: subResult
